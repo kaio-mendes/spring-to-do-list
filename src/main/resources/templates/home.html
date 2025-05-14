@@ -12,22 +12,23 @@
         <div class="title">
           <h1>Tarefas:</h1>
         </div>
-        <div class="inputs">
-          <div class="input-group">
-            <label>Tarefa:</label>
-            <input placeholder="Tarefa" type="text" />
+        <form id="formTarefa">
+          <div class="inputs">
+            <div class="input-group">
+              <label>Tarefa:</label>
+              <input placeholder="Tarefa" type="text" id="tarefa" />
+            </div>
+            <div class="input-group">
+              <label>Responsável:</label>
+              <input placeholder="Responsável" type="text" id="responsavel" />
+            </div>
+            <div class="input-group">
+              <label>Data:</label>
+              <input placeholder="Data" type="date" id="data" />
+            </div>
+            <button class="submit_button" type="submit">Enviar</button>
           </div>
-          <div class="input-group">
-            <label>Responsável:</label>
-            <input placeholder="Responsável" type="text" />
-          </div>
-          <div class="input-group">
-            <label>Data:</label>
-            <input placeholder="Data" type="date" />
-          </div>
-          <button class="submit_button" type="submit">Enviar</button>
-        </div>
-
+        </form>
         <div class="itens">
           <table>
             <tr>
@@ -35,15 +36,6 @@
               <th>Responsável</th>
               <th>Datas</th>
               <th>Ações</th>
-            </tr>
-            <tr>
-              <td>Tarefa 1</td>
-              <td>Kaio</td>
-              <td>19/11/2004</td>
-              <td class="acoes">
-                <button class="concluir">Concluir</button>
-                <button class="deletar">Deletar</button>
-              </td>
             </tr>
           </table>
         </div>
@@ -57,5 +49,88 @@
         </p>
       </footer>
     </div>
+
+    <script>
+      const form = document.getElementById("formTarefa");
+      const table = document.querySelector("table");
+
+      async function carregarTarefas() {
+        const resposta = await fetch("/tarefas");
+        const tarefas = await resposta.json();
+        const showTable = tarefas
+          .map(
+            (tarefa) => `
+        <tr class="${tarefa.realizado ? "realizado" : ""}">
+          <td>${tarefa.nome}</td>
+          <td>${tarefa.responsavel}</td>
+          <td>${tarefa.data}</td>
+          <td class="acoes">
+            <button onclick="concluirTarefa(${
+              tarefa.id
+            })" class="concluir">Concluir</button>
+            <button onclick="deletarTarefa(${
+              tarefa.id
+            })" class="deletar">Deletar</button>
+          </td>
+        </tr>
+      `
+          )
+          .join("");
+
+        table.innerHTML = `
+      <tr>
+        <th>Tarefas</th>
+        <th>Responsável</th>
+        <th>Datas</th>
+        <th>Ações</th>
+      </tr>
+      ${showTable}
+    `;
+      }
+
+      async function deletarTarefa(id) {
+        await fetch(`/tarefas/${id}`, { method: "DELETE" });
+        carregarTarefas();
+      }
+
+      async function concluirTarefa(id) {
+        const resposta = await fetch("/tarefas");
+        const tarefas = await resposta.json();
+        const tarefa = tarefas.find((t) => t.id === id);
+        let prev = tarefa.realizado;
+        tarefa.realizado = !prev;
+        console.log(tarefa);
+        await fetch("/tarefas", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(tarefa),
+        });
+
+        carregarTarefas();
+      }
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const tarefa = {
+          nome: document.getElementById("tarefa").value,
+          responsavel: document.getElementById("responsavel").value,
+          data: document.getElementById("data").value,
+          realizado: false,
+        };
+
+        await fetch("/tarefas", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(tarefa),
+        });
+
+        form.reset();
+        carregarTarefas();
+      });
+
+      // Inicializa tabela ao carregar a página
+      carregarTarefas();
+    </script>
   </body>
 </html>

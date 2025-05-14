@@ -151,3 +151,7 @@ footer {
 footer span {
   font-weight: bold;
 }
+
+.realizado td {
+  background-color: rgb(30, 212, 136);
+}
